@@ -1,5 +1,10 @@
 services:
   - type: web
     name: book-by-truf-backend
-    env: docker
+    env: java
+    buildCommand: "./mvnw clean package -DskipTests"
+    startCommand: "java -jar target/*.jar"
     plan: free
+    envVars:
+      - key: JAVA_VERSION
+        value: 17
