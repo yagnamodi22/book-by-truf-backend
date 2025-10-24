@@ -1,20 +1,20 @@
-# Use OpenJDK image
-FROM openjdk:17-jdk-slim
+# Use official OpenJDK 21 image
+FROM openjdk:21-jdk-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy Maven wrapper and project files
+# Copy project files
 COPY . .
 
-# Grant execute permission for mvnw
+# Make the Maven wrapper executable
 RUN chmod +x mvnw
 
-# Build the project (skip tests to speed up)
+# Build the app (skip tests to speed up)
 RUN ./mvnw clean package -DskipTests
 
-# Expose the port your app runs on
+# Expose the port your Spring Boot app runs on
 EXPOSE 8080
 
-# Run the built jar file
+# Run the application
 CMD ["java", "-jar", "target/*.jar"]
