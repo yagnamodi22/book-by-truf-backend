@@ -1,25 +1,20 @@
-# Use an official Java runtime as a parent image
-FROM eclipse-temurin:17-jdk-alpine
+# Use OpenJDK image
+FROM openjdk:17-jdk-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
+# Copy Maven wrapper and project files
+COPY . .
 
-# Download dependencies
-RUN ./mvnw dependency:go-offline
+# Grant execute permission for mvnw
+RUN chmod +x mvnw
 
-# Copy project files
-COPY src ./src
-
-# Package the application
+# Build the project (skip tests to speed up)
 RUN ./mvnw clean package -DskipTests
 
-# Expose port 8080
+# Expose the port your app runs on
 EXPOSE 8080
 
-# Run the app
-ENTRYPOINT ["java","-jar","target/*.jar"]
+# Run the built jar file
+CMD ["java", "-jar", "target/*.jar"]
