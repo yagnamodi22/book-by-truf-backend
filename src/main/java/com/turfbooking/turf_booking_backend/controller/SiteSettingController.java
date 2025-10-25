@@ -12,7 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/site-settings")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "https://frontend-bookmytruf.vercel.app", "https://frontend-bookmytruf-git-main-yagnamodi22s-projects.vercel.app"}, allowCredentials = "true", maxAge = 3600)
 public class SiteSettingController {
 
     @Autowired

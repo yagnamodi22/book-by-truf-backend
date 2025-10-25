@@ -67,10 +67,12 @@ public class SecurityConfig {
                 "http://localhost:3000",
                 "http://localhost:3001",
                 "http://localhost:5173",
-                "https://frontend-bookmytruf.vercel.app"
+                "https://frontend-bookmytruf.vercel.app",
+                "https://frontend-bookmytruf-git-main-yagnamodi22s-projects.vercel.app"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
