@@ -7,6 +7,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class CorsConfig {
@@ -15,22 +16,18 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allow specific origins (your React app)
-        configuration.setAllowedOrigins(Arrays.asList(
+        // ✅ Allow your frontend URLs explicitly
+        configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "http://localhost:3001",
                 "http://localhost:5173",
-                "https://yourdomain.com",
-                "https://book-by-turf.onrender.com",
-                "https://*.onrender.com"
+                "https://frontend-bookmytruf.vercel.app" // ✅ your Vercel production URL
         ));
 
-        // Allow specific HTTP methods
         configuration.setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
         ));
 
-        // Allow specific headers
         configuration.setAllowedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
@@ -39,10 +36,7 @@ public class CorsConfig {
                 "Origin"
         ));
 
-        // Allow credentials (cookies, auth headers)
         configuration.setAllowCredentials(true);
-
-        // Cache preflight response for 1 hour
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -51,4 +45,3 @@ public class CorsConfig {
         return source;
     }
 }
-
