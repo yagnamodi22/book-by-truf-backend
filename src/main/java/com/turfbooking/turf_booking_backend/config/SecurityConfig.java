@@ -59,9 +59,15 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> {})
                 .authorizeHttpRequests(auth -> auth
+                        // Public endpoints
                         .requestMatchers("/auth/register", "/auth/login").permitAll()
                         .requestMatchers("/turfs/public/**").permitAll()
                         .requestMatchers("/site-settings", "/site-settings/map").permitAll()
+                        // Health check endpoint for Render
+                        .requestMatchers("/", "/health", "/api", "/api/health").permitAll()
+                        // Swagger/OpenAPI endpoints if you have them
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // Protected endpoints
                         .requestMatchers("/turfs/admin/**").hasRole("ADMIN")
                         .requestMatchers("/turfs/**").authenticated()
                         .requestMatchers("/auth/**").authenticated()

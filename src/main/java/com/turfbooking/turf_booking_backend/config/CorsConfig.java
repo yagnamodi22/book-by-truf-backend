@@ -20,7 +20,9 @@ public class CorsConfig {
                 "http://localhost:3000",
                 "http://localhost:3001",
                 "http://localhost:5173",
-                "https://yourdomain.com"
+                "https://yourdomain.com",
+                "https://book-by-turf.onrender.com",
+                "https://*.onrender.com"
         ));
 
         // Allow specific HTTP methods
