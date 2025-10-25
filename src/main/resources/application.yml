@@ -1,0 +1,49 @@
+spring:
+  # Database Configuration
+  datasource:
+    url: ${JDBC_DATABASE_URL:jdbc:postgresql://localhost:5432/turfbooking}
+    username: ${JDBC_DATABASE_USERNAME:postgres}
+    password: ${JDBC_DATABASE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: HikariPool-1
+      maximum-pool-size: 10
+      minimum-idle: 2
+      auto-commit: true
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+# Server Configuration
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /api
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:mySecretKey1234567890123456789012345678901234567890}
+  expiration: 86400000
+
+# Logging Configuration
+logging:
+  level:
+    com.turfbooking: INFO
+    org.springframework.security: INFO
+    org.hibernate.orm.connections: ERROR
+    root: INFO
+
+# Spring Boot Settings
+spring.main:
+  allow-bean-definition-overriding: true
+  allow-circular-references: true
