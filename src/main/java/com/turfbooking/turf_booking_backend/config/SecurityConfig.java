@@ -86,18 +86,18 @@ public class SecurityConfig {
             .cors() // Use the CorsConfigurationSource bean
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
-                .requestMatchers("/auth/register", "/auth/login").permitAll()
-                .requestMatchers("/turfs/public/**").permitAll()
-                .requestMatchers("/site-settings", "/site-settings/map").permitAll()
+                .requestMatchers("/auth/register", "/auth/login", "/api/auth/register", "/api/auth/login").permitAll()
+                .requestMatchers("/turfs/public/**", "/api/turfs/public/**").permitAll()
+                .requestMatchers("/site-settings/**", "/api/site-settings/**").permitAll()
                 // Health check endpoint
                 .requestMatchers("/", "/health", "/api", "/api/health").permitAll()
                 // Swagger/OpenAPI if needed
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 // Admin-protected endpoints
-                .requestMatchers("/turfs/admin/**").hasRole("ADMIN")
+                .requestMatchers("/turfs/admin/**", "/api/turfs/admin/**").hasRole("ADMIN")
                 // Authenticated endpoints
-                .requestMatchers("/turfs/**").authenticated()
-                .requestMatchers("/auth/**").authenticated()
+                .requestMatchers("/turfs/**", "/api/turfs/**").authenticated()
+                .requestMatchers("/auth/**", "/api/auth/**").authenticated()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
