@@ -19,6 +19,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -54,29 +59,51 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    // CORS configuration
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:3000",
+                "http://localhost:3001",
+                "http://localhost:5173",
+                "https://frontend-bookmytruf.vercel.app"
+        ));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> {})
-                .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
-                        .requestMatchers("/auth/register", "/auth/login").permitAll()
-                        .requestMatchers("/turfs/public/**").permitAll()
-                        .requestMatchers("/site-settings", "/site-settings/map").permitAll()
-                        // Health check endpoint for Render
-                        .requestMatchers("/", "/health", "/api", "/api/health").permitAll()
-                        // Swagger/OpenAPI endpoints if you have them
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        // Protected endpoints
-                        .requestMatchers("/turfs/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/turfs/**").authenticated()
-                        .requestMatchers("/auth/**").authenticated()
-                        .anyRequest().authenticated()
-                )
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        http
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors() // Use the CorsConfigurationSource bean
+            .authorizeHttpRequests(auth -> auth
+                // Public endpoints
+                .requestMatchers("/auth/register", "/auth/login").permitAll()
+                .requestMatchers("/turfs/public/**").permitAll()
+                .requestMatchers("/site-settings", "/site-settings/map").permitAll()
+                // Health check endpoint
+                .requestMatchers("/", "/health", "/api", "/api/health").permitAll()
+                // Swagger/OpenAPI if needed
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                // Admin-protected endpoints
+                .requestMatchers("/turfs/admin/**").hasRole("ADMIN")
+                // Authenticated endpoints
+                .requestMatchers("/turfs/**").authenticated()
+                .requestMatchers("/auth/**").authenticated()
+                .anyRequest().authenticated()
+            )
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authenticationProvider(authenticationProvider())
+            .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
