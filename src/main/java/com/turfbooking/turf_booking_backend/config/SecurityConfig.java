@@ -59,7 +59,7 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // CORS configuration
+    // ✅ Centralized CORS configuration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -81,25 +81,27 @@ public class SecurityConfig {
         return source;
     }
 
+    // ✅ Main Security Configuration
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints
-                .requestMatchers("/auth/register", "/auth/login", "/api/auth/register", "/api/auth/login").permitAll()
-                .requestMatchers("/turfs/public/**", "/api/turfs/public/**").permitAll()
-                .requestMatchers("/site-settings/**", "/api/site-settings/**").permitAll()
-                // Health check endpoint
-                .requestMatchers("/", "/health", "/api", "/api/health").permitAll()
-                // Swagger/OpenAPI if needed
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                // Admin-protected endpoints
+                // ✅ Public endpoints
+                .requestMatchers(
+                    "/auth/register", "/auth/login",
+                    "/api/auth/register", "/api/auth/login",
+                    "/turfs/public/**", "/api/turfs/public/**",
+                    "/site-settings/**", "/api/site-settings/**",
+                    "/", "/health", "/api", "/api/health",
+                    "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
+                ).permitAll()
+
+                // ✅ Admin endpoints
                 .requestMatchers("/turfs/admin/**", "/api/turfs/admin/**").hasRole("ADMIN")
-                // Authenticated endpoints
-                .requestMatchers("/turfs/**", "/api/turfs/**").authenticated()
-                .requestMatchers("/auth/**", "/api/auth/**").authenticated()
+
+                // ✅ All other requests must be authenticated
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
