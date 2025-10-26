@@ -70,18 +70,37 @@ public class SiteSettingController {
                 return ResponseEntity.badRequest().body("Empty payload");
             }
             
-            Map<String, String> results = new HashMap<>();
+            // Log the incoming request
+            System.out.println("Received bulk update request with " + payload.size() + " settings");
+            
+            Map<String, Object> results = new HashMap<>();
+            Map<String, String> successResults = new HashMap<>();
+            Map<String, String> errorResults = new HashMap<>();
+            
             for (Map.Entry<String, String> entry : payload.entrySet()) {
+                String key = entry.getKey();
+                String value = entry.getValue();
+                
                 try {
-                    siteSettingService.upsert(entry.getKey(), entry.getValue(), "text");
-                    results.put(entry.getKey(), "success");
+                    System.out.println("Processing setting: " + key + " with value: " + value);
+                    siteSettingService.upsert(key, value, "text");
+                    successResults.put(key, "success");
                 } catch (Exception e) {
-                    results.put(entry.getKey(), "error: " + e.getMessage());
+                    String errorMsg = "Error updating " + key + ": " + e.getMessage();
+                    System.err.println(errorMsg);
+                    e.printStackTrace();
+                    errorResults.put(key, errorMsg);
                 }
             }
             
+            results.put("success", successResults);
+            results.put("errors", errorResults);
+            
+            System.out.println("Bulk update completed. Success: " + successResults.size() + ", Errors: " + errorResults.size());
             return ResponseEntity.ok(results);
         } catch (Exception e) {
+            System.err.println("Critical error in bulk update: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.internalServerError().body("Bulk update failed: " + e.getMessage());
         }
     }

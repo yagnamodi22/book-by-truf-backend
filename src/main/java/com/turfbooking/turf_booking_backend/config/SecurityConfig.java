@@ -93,13 +93,15 @@ public class SecurityConfig {
                     "/auth/register", "/auth/login",
                     "/api/auth/register", "/api/auth/login",
                     "/turfs/public/**", "/api/turfs/public/**",
-                    "/site-settings/**", "/api/site-settings/**",
+                    "/site-settings", "/site-settings/map", "/api/site-settings", "/api/site-settings/map",
                     "/", "/health", "/api", "/api/health",
                     "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
                 ).permitAll()
 
                 // ✅ Admin endpoints
-                .requestMatchers("/turfs/admin/**", "/api/turfs/admin/**").hasRole("ADMIN")
+                .requestMatchers("/turfs/admin/**", "/api/turfs/admin/**", 
+                                "/site-settings/bulk", 
+                                "/api/site-settings/bulk").hasRole("ADMIN")
 
                 // ✅ All other requests must be authenticated
                 .anyRequest().authenticated()
