@@ -1,5 +1,7 @@
 package com.turfbooking.turf_booking_backend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.turfbooking.turf_booking_backend.entity.SiteSetting;
 import com.turfbooking.turf_booking_backend.repository.SiteSettingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,9 @@ import java.util.Optional;
 @Service
 public class SiteSettingService {
 
+    // ✅ Logger added to track what’s happening
+    private static final Logger log = LoggerFactory.getLogger(SiteSettingService.class);
+
     @Autowired
     private SiteSettingRepository siteSettingRepository;
 
@@ -24,15 +29,29 @@ public class SiteSettingService {
         return siteSettingRepository.findBySettingKey(key);
     }
 
+    // ✅ Added logging inside upsert()
     public SiteSetting upsert(String key, String value, String type) {
-        SiteSetting setting = siteSettingRepository.findBySettingKey(key)
-                .orElseGet(SiteSetting::new);
-        setting.setSettingKey(key);
-        setting.setSettingValue(value == null ? "" : value);
-        if (type != null && !type.isEmpty()) {
-            setting.setSettingType(type);
+        log.info("🔹 Upsert called with key={}, value={}, type={}", key, value, type);
+
+        try {
+            SiteSetting setting = siteSettingRepository.findBySettingKey(key)
+                    .orElseGet(SiteSetting::new);
+
+            setting.setSettingKey(key);
+            setting.setSettingValue(value == null ? "" : value);
+
+            if (type != null && !type.isEmpty()) {
+                setting.setSettingType(type);
+            }
+
+            SiteSetting saved = siteSettingRepository.save(setting);
+            log.info("✅ Successfully saved site setting with key={}", key);
+            return saved;
+
+        } catch (Exception e) {
+            log.error("❌ Error while upserting site setting (key={}): {}", key, e.getMessage(), e);
+            throw e;
         }
-        return siteSettingRepository.save(setting);
     }
 
     public Map<String, String> getAsMap() {
@@ -43,5 +62,3 @@ public class SiteSettingService {
         return map;
     }
 }
-
-
