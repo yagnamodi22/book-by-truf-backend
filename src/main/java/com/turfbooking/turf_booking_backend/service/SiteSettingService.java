@@ -33,6 +33,11 @@ public class SiteSettingService {
     public SiteSetting upsert(String key, String value, String type) {
         log.info("🔹 Upsert called with key={}, value={}, type={}", key, value, type);
 
+        if (key == null || key.trim().isEmpty()) {
+            log.error("❌ Cannot upsert setting with null or empty key");
+            throw new IllegalArgumentException("Setting key cannot be null or empty");
+        }
+
         try {
             SiteSetting setting = siteSettingRepository.findBySettingKey(key)
                     .orElseGet(SiteSetting::new);
@@ -44,8 +49,9 @@ public class SiteSettingService {
                 setting.setSettingType(type);
             }
 
-            SiteSetting saved = siteSettingRepository.save(setting);
-            log.info("✅ Successfully saved site setting with key={}", key);
+            // Ensure we flush to the database immediately
+            SiteSetting saved = siteSettingRepository.saveAndFlush(setting);
+            log.info("✅ Successfully saved site setting with key={}, id={}", key, saved.getId());
             return saved;
 
         } catch (Exception e) {

@@ -67,7 +67,10 @@ public class SiteSettingController {
     public ResponseEntity<?> upsertBulk(@RequestBody Map<String, String> payload) {
         try {
             if (payload == null || payload.isEmpty()) {
-                return ResponseEntity.badRequest().body("Empty payload");
+                return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Empty payload"
+                ));
             }
             
             // Log the incoming request
@@ -83,8 +86,13 @@ public class SiteSettingController {
                 
                 try {
                     System.out.println("Processing setting: " + key + " with value: " + value);
-                    siteSettingService.upsert(key, value, "text");
-                    successResults.put(key, "success");
+                    // Ensure we're using a transaction for each setting update
+                    SiteSetting saved = siteSettingService.upsert(key, value, "text");
+                    if (saved != null && saved.getId() != null) {
+                        successResults.put(key, "success");
+                    } else {
+                        errorResults.put(key, "Failed to save setting (null result)");
+                    }
                 } catch (Exception e) {
                     String errorMsg = "Error updating " + key + ": " + e.getMessage();
                     System.err.println(errorMsg);
@@ -97,11 +105,23 @@ public class SiteSettingController {
             results.put("errors", errorResults);
             
             System.out.println("Bulk update completed. Success: " + successResults.size() + ", Errors: " + errorResults.size());
-            return ResponseEntity.ok(results);
+            
+            // Return a structured response with clear success/failure indication
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", errorResults.isEmpty());
+            response.put("message", errorResults.isEmpty() ? 
+                "All settings updated successfully" : 
+                "Some settings failed to update");
+            response.put("results", results);
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             System.err.println("Critical error in bulk update: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.internalServerError().body("Bulk update failed: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(Map.of(
+                "success", false,
+                "message", "Bulk update failed: " + e.getMessage()
+            ));
         }
     }
 }
