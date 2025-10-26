@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -68,10 +69,20 @@ public class SiteSettingController {
             if (payload == null || payload.isEmpty()) {
                 return ResponseEntity.badRequest().body("Empty payload");
             }
-            payload.forEach((k, v) -> siteSettingService.upsert(k, v, "text"));
-            return ResponseEntity.ok().build();
+            
+            Map<String, String> results = new HashMap<>();
+            for (Map.Entry<String, String> entry : payload.entrySet()) {
+                try {
+                    siteSettingService.upsert(entry.getKey(), entry.getValue(), "text");
+                    results.put(entry.getKey(), "success");
+                } catch (Exception e) {
+                    results.put(entry.getKey(), "error: " + e.getMessage());
+                }
+            }
+            
+            return ResponseEntity.ok(results);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return ResponseEntity.internalServerError().body("Bulk update failed: " + e.getMessage());
         }
     }
 }
