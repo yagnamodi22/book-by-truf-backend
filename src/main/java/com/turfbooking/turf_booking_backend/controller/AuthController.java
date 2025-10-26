@@ -6,6 +6,9 @@ import com.turfbooking.turf_booking_backend.dto.UserRegistrationDTO;
 import com.turfbooking.turf_booking_backend.entity.User;
 import com.turfbooking.turf_booking_backend.service.JwtService;
 import com.turfbooking.turf_booking_backend.service.UserService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +19,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 // import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -215,8 +220,13 @@ public class AuthController {
     }
 
     @PostMapping("/validate")
-    public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String token, HttpServletResponse response) {
         try {
+            // Set no-cache headers to prevent caching of sensitive data
+            response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+            response.setHeader("Pragma", "no-cache");
+            response.setHeader("Expires", "0");
+            
             if (token.startsWith("Bearer ")) {
                 token = token.substring(7);
             }
@@ -225,12 +235,62 @@ public class AuthController {
             User user = (User) userService.loadUserByUsername(username);
 
             if (jwtService.isTokenValid(token, user)) {
-                return ResponseEntity.ok("Token is valid");
+                return ResponseEntity.ok(Map.of(
+                    "valid", true,
+                    "user", Map.of(
+                        "email", user.getEmail(),
+                        "role", user.getRole().name()
+                    )
+                ));
             } else {
-                return ResponseEntity.badRequest().body("Invalid token");
+                return ResponseEntity.status(401).body(Map.of(
+                    "valid", false,
+                    "message", "Invalid token"
+                ));
             }
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Token validation failed");
+            return ResponseEntity.status(401).body(Map.of(
+                "valid", false,
+                "message", "Token validation failed: " + e.getMessage()
+            ));
+        }
+    }
+    
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            // Clear security context
+            SecurityContextHolder.clearContext();
+            
+            // Clear JWT cookie if using cookie-based auth
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if (cookie.getName().equals("jwt") || cookie.getName().equals("refreshToken")) {
+                        cookie.setValue("");
+                        cookie.setPath("/");
+                        cookie.setMaxAge(0);
+                        cookie.setHttpOnly(true);
+                        cookie.setSecure(true);
+                        response.addCookie(cookie);
+                    }
+                }
+            }
+            
+            // Set cache control headers to prevent caching
+            response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+            response.setHeader("Pragma", "no-cache");
+            response.setHeader("Expires", "0");
+            
+            return ResponseEntity.ok().body(Map.of(
+                "success", true,
+                "message", "Logged out successfully"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                "success", false,
+                "message", "Logout failed: " + e.getMessage()
+            ));
         }
     }
 }

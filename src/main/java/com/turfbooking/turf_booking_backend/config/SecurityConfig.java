@@ -2,6 +2,7 @@ package com.turfbooking.turf_booking_backend.config;
 
 import com.turfbooking.turf_booking_backend.security.JwtAuthenticationEntryPoint;
 import com.turfbooking.turf_booking_backend.security.JwtAuthenticationFilter;
+import com.turfbooking.turf_booking_backend.security.NoCacheFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -90,8 +91,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // ✅ Public endpoints
                 .requestMatchers(
-                    "/auth/register", "/auth/login",
-                    "/api/auth/register", "/api/auth/login",
+                    "/auth/register", "/auth/login", "/auth/logout",
+                    "/api/auth/register", "/api/auth/login", "/api/auth/logout",
                     "/turfs/public/**", "/api/turfs/public/**",
                     "/site-settings", "/site-settings/map", "/api/site-settings", "/api/site-settings/map",
                     "/", "/health", "/api", "/api/health",
@@ -109,8 +110,20 @@ public class SecurityConfig {
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(noCacheFilter(), JwtAuthenticationFilter.class)
+            .headers(headers -> headers
+                .cacheControl(cache -> cache.disable())  // Disable browser caching
+                .frameOptions(frame -> frame.deny())     // Prevent clickjacking
+                .xssProtection(xss -> xss.disable())     // Modern browsers have built-in XSS protection
+                .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))
+            );
 
         return http.build();
+    }
+    
+    @Bean
+    public NoCacheFilter noCacheFilter() {
+        return new NoCacheFilter();
     }
 }
