@@ -127,6 +127,25 @@ public class BookingController {
             return ResponseEntity.badRequest().body("Error fetching bookings: " + e.getMessage());
         }
     }
+    
+    @GetMapping("/turf/{turfId}/paginated")
+    @PreAuthorize("hasRole('OWNER') or hasRole('ADMIN')")
+    public ResponseEntity<?> getBookingsByTurfPaginated(
+            @PathVariable Long turfId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            org.springframework.data.domain.Pageable pageable = 
+                org.springframework.data.domain.PageRequest.of(page, size);
+            
+            org.springframework.data.domain.Page<BookingDetailsDTO> bookingDetails = 
+                bookingDetailsService.getBookingDetailsByTurfPaginated(turfId, pageable);
+            
+            return ResponseEntity.ok(bookingDetails);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error fetching paginated bookings: " + e.getMessage());
+        }
+    }
 
     @GetMapping("/status/{status}")
     @PreAuthorize("hasRole('ADMIN')")
