@@ -50,16 +50,21 @@ public class Booking {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
+
+    // ✅ Added fields
     @Column(name = "full_name")
     private String fullName;
-    
+
     @Column(name = "phone_number")
     private String phoneNumber;
-    
+
     @Column(name = "email")
     private String email;
 
+    @Column(name = "payment_mode")
+    private String paymentMode;
+
+    // Enum
     public enum BookingStatus {
         PENDING,
         CONFIRMED,
@@ -157,29 +162,37 @@ public class Booking {
     public void setPayment(Payment payment) {
         this.payment = payment;
     }
-    
+
     public String getFullName() {
         return fullName;
     }
-    
+
     public void setFullName(String fullName) {
         this.fullName = fullName;
     }
-    
+
     public String getPhoneNumber() {
         return phoneNumber;
     }
-    
+
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
-    
+
     public String getEmail() {
         return email;
     }
-    
+
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPaymentMode() {
+        return paymentMode;
+    }
+
+    public void setPaymentMode(String paymentMode) {
+        this.paymentMode = paymentMode;
     }
 
     public LocalDateTime getCreatedAt() {

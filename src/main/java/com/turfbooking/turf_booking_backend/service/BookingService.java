@@ -29,8 +29,8 @@ public class BookingService {
     @Autowired
     private UserRepository userRepository;
 
-    public Booking createBooking(Long userId, Long turfId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime, 
-                            String fullName, String phoneNumber, String email, String paymentMethod) {
+    public Booking createBooking(Long userId, Long turfId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime,
+                                 String fullName, String phoneNumber, String email, String paymentMode) {
         // Validate user exists
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -48,15 +48,13 @@ public class BookingService {
         if (bookingDate.isBefore(today)) {
             throw new RuntimeException("Booking date cannot be in the past");
         }
-        
-        // Special handling for late night slots (00:00-03:00)
+
+        // Handle late-night slots (00:00 - 03:00)
         boolean isLateNightSlot = startTime.getHour() >= 0 && startTime.getHour() < 3;
-        
-        // Only apply past time validation for today's date and non-late-night slots
-        // or for late-night slots if we're already past that time today
-        if (bookingDate.equals(today) && 
-            (!isLateNightSlot && startTime.isBefore(LocalTime.now())) || 
-            (isLateNightSlot && startTime.isBefore(LocalTime.now()) && LocalTime.now().getHour() < 3)) {
+
+        if (bookingDate.equals(today) &&
+                ((!isLateNightSlot && startTime.isBefore(LocalTime.now())) ||
+                 (isLateNightSlot && startTime.isBefore(LocalTime.now()) && LocalTime.now().getHour() < 3))) {
             throw new RuntimeException("You cannot book past time slots. Please select an upcoming time slot.");
         }
 
@@ -80,6 +78,10 @@ public class BookingService {
         Booking booking = new Booking(user, turf, bookingDate, startTime, endTime);
         booking.setTotalAmount(totalAmount);
         booking.setStatus(Booking.BookingStatus.PENDING);
+        booking.setFullName(fullName);
+        booking.setPhoneNumber(phoneNumber);
+        booking.setEmail(email);
+        booking.setPaymentMode(paymentMode);
 
         return bookingRepository.save(booking);
     }
@@ -152,13 +154,19 @@ public class BookingService {
         return booked;
     }
 
-    public List<Booking> createMultipleBookings(Long userId, Long turfId, LocalDate date, List<LocalTime> slotStarts, String paymentMethod, String fullName, String phoneNumber, String email) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-        Turf turf = turfRepository.findById(turfId).orElseThrow(() -> new RuntimeException("Turf not found"));
-        if (!turf.getIsActive()) throw new RuntimeException("Turf is not available for booking");
+    public List<Booking> createMultipleBookings(Long userId, Long turfId, LocalDate date,
+                                                List<LocalTime> slotStarts, String paymentMode,
+                                                String fullName, String phoneNumber, String email) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Turf turf = turfRepository.findById(turfId)
+                .orElseThrow(() -> new RuntimeException("Turf not found"));
+
+        if (!turf.getIsActive()) {
+            throw new RuntimeException("Turf is not available for booking");
+        }
 
         List<Booking> created = new ArrayList<>();
-        
         LocalDate today = LocalDate.now();
         if (date.isBefore(today)) {
             throw new RuntimeException("Booking date cannot be in the past");
@@ -166,37 +174,31 @@ public class BookingService {
 
         for (LocalTime start : slotStarts) {
             LocalTime end = start.plusHours(1);
-            
-            // Special handling for late night slots (00:00-03:00)
-            // These are valid even if they appear to be "in the past" when comparing just times
+
+            // Handle late-night slots (00:00 - 03:00)
             boolean isLateNightSlot = start.getHour() >= 0 && start.getHour() < 3;
-            
-            // Only apply past time validation for today's date and non-late-night slots
-            // or for late-night slots if we're already past that time today
-            if (date.equals(today) && 
-                (!isLateNightSlot && start.isBefore(LocalTime.now())) || 
-                (isLateNightSlot && start.isBefore(LocalTime.now()) && LocalTime.now().getHour() < 3)) {
+
+            if (date.equals(today) &&
+                    ((!isLateNightSlot && start.isBefore(LocalTime.now())) ||
+                     (isLateNightSlot && start.isBefore(LocalTime.now()) && LocalTime.now().getHour() < 3))) {
                 throw new RuntimeException("You cannot book past time slots. Please select an upcoming time slot.");
             }
-            
+
             if (!isTimeSlotAvailable(turfId, date, start, end)) {
                 throw new RuntimeException("One or more selected slots are no longer available");
             }
+
             Booking booking = new Booking(user, turf, date, start, end);
             booking.setTotalAmount(turf.getPricePerHour());
-            booking.setStatus(Booking.BookingStatus.CONFIRMED); // Set to CONFIRMED after payment
+            booking.setStatus(Booking.BookingStatus.CONFIRMED);
             booking.setFullName(fullName);
             booking.setPhoneNumber(phoneNumber);
             booking.setEmail(email);
-            if (dto.getPaymentMethod() != null) {
-                Payment payment = new Payment();
-                payment.setPaymentMethod(dto.getPaymentMethod());
-                payment.setBooking(booking);
-                booking.setPayment(payment);
-            }
+            booking.setPaymentMode(paymentMode); // ✅ Fixed here
+
             created.add(bookingRepository.save(booking));
         }
-        
+
         return created;
     }
 }
