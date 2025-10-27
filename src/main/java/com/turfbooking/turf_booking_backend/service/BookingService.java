@@ -48,7 +48,7 @@ public class BookingService {
             throw new RuntimeException("Booking date cannot be in the past");
         }
         if (bookingDate.equals(today) && startTime.isBefore(LocalTime.now())) {
-            throw new RuntimeException("Selected start time has already passed");
+            throw new RuntimeException("You cannot book past time slots. Please select an upcoming time slot.");
         }
 
         // Check for booking conflicts
@@ -158,7 +158,7 @@ public class BookingService {
         for (LocalTime start : slotStarts) {
             LocalTime end = start.plusHours(1);
             if (date.equals(today) && start.isBefore(LocalTime.now())) {
-                throw new RuntimeException("One or more selected slots are in the past");
+                throw new RuntimeException("You cannot book past time slots. Please select an upcoming time slot.");
             }
             if (!isTimeSlotAvailable(turfId, date, start, end)) {
                 throw new RuntimeException("One or more selected slots are no longer available");
