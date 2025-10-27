@@ -6,25 +6,32 @@ import com.turfbooking.turf_booking_backend.dto.UserRegistrationDTO;
 import com.turfbooking.turf_booking_backend.entity.User;
 import com.turfbooking.turf_booking_backend.service.JwtService;
 import com.turfbooking.turf_booking_backend.service.UserService;
+
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-// import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
+// For production, use ONLY your deployed frontend URL
+@CrossOrigin(
+    origins = {"https://frontend-bookmytruf.vercel.app"},
+    allowCredentials = "true"
+)
 public class AuthController {
 
     @Autowired
@@ -37,15 +44,14 @@ public class AuthController {
     private JwtService jwtService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
+    public ResponseEntity<?> register(@Valid @RequestBody UserRegistrationDTO registrationDTO, HttpServletResponse response) {
         try {
-            // registration request received
             User user = new User(
-                    registrationDTO.getFirstName(),
-                    registrationDTO.getLastName(),
-                    registrationDTO.getEmail(),
-                    registrationDTO.getPassword(),
-                    registrationDTO.getPhone()
+                registrationDTO.getFirstName(),
+                registrationDTO.getLastName(),
+                registrationDTO.getEmail(),
+                registrationDTO.getPassword(),
+                registrationDTO.getPhone()
             );
 
             if (registrationDTO.getRole() != null) {
@@ -55,8 +61,18 @@ public class AuthController {
             User savedUser = userService.createUser(user);
             String token = jwtService.generateToken(savedUser);
 
+            // Set JWT as HttpOnly cookie
+            ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(24 * 60 * 60)
+                .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+
             return ResponseEntity.ok(new AuthResponse(
-                token, 
+                token,
                 savedUser.getEmail(),
                 savedUser.getFirstName() + " " + savedUser.getLastName(),
                 savedUser.getFirstName(),
@@ -65,7 +81,6 @@ public class AuthController {
                 savedUser.getRole().name(),
                 savedUser.getCreatedAt()
             ));
-
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.");
         } catch (Exception e) {
@@ -74,29 +89,28 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody AuthRequest authRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody AuthRequest authRequest, HttpServletResponse response) {
         try {
-            // login attempt
-            
-            // Check if user exists (optional pre-check; main validation happens during authenticate)
-            userService.findByEmail(authRequest.getEmail()).orElse(null);
-            // authenticate credentials
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            authRequest.getEmail(),
-                            authRequest.getPassword()
-                    )
+                new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
             );
-
-            // Always fetch the latest user data from database after authentication
             User user = userService.findByEmail(authRequest.getEmail())
-                    .orElseThrow(() -> new RuntimeException("User not found after authentication"));
-            
-            // role fetched for token generation
+                .orElseThrow(() -> new RuntimeException("User not found after authentication"));
+
             String token = jwtService.generateToken(user);
 
+            // Set JWT as HttpOnly cookie
+            ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(24 * 60 * 60)
+                .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+
             return ResponseEntity.ok(new AuthResponse(
-                token, 
+                token,
                 user.getEmail(),
                 user.getFirstName() + " " + user.getLastName(),
                 user.getFirstName(),
@@ -105,9 +119,7 @@ public class AuthController {
                 user.getRole().name(),
                 user.getCreatedAt()
             ));
-
         } catch (AuthenticationException e) {
-            // authentication failed
             return ResponseEntity.badRequest().body("Invalid credentials");
         }
     }
@@ -117,12 +129,12 @@ public class AuthController {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String currentUserEmail = authentication.getName();
-            
+
             User user = userService.findByEmail(currentUserEmail)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
             return ResponseEntity.ok(new AuthResponse(
-                null, // No token needed for profile
+                null,
                 user.getEmail(),
                 user.getFirstName() + " " + user.getLastName(),
                 user.getFirstName(),
@@ -141,11 +153,10 @@ public class AuthController {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String currentUserEmail = authentication.getName();
-            
-            User user = userService.findByEmail(currentUserEmail)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Update only allowed fields directly on the user object
+            User user = userService.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
             if (updateDTO.getFirstName() != null) {
                 user.setFirstName(updateDTO.getFirstName());
             }
@@ -156,17 +167,13 @@ public class AuthController {
                 user.setPhone(updateDTO.getPhone());
             }
             if (updateDTO.getPassword() != null && !updateDTO.getPassword().trim().isEmpty()) {
-                // Set the raw password - UserService will handle validation and encoding
-            // updating password for user
                 user.setPassword(updateDTO.getPassword());
             }
 
-            // Use UserService to handle password validation and encoding
             User updatedUser = userService.updateUser(user);
-            // user saved successfully
-            
+
             return ResponseEntity.ok(new AuthResponse(
-                null, // No token needed for profile update
+                null,
                 updatedUser.getEmail(),
                 updatedUser.getFirstName() + " " + updatedUser.getLastName(),
                 updatedUser.getFirstName(),
@@ -194,11 +201,10 @@ public class AuthController {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String currentUserEmail = authentication.getName();
-            
-            User user = userService.findByEmail(currentUserEmail)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Verify current password
+            User user = userService.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
             try {
                 authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(currentUserEmail, passwordRequest.getCurrentPassword())
@@ -207,10 +213,9 @@ public class AuthController {
                 return ResponseEntity.badRequest().body("Current password is incorrect");
             }
 
-            // Update password using new password
-            user.setPassword(passwordRequest.getNewPassword()); // validated and hashed by UserService
+            user.setPassword(passwordRequest.getNewPassword());
             userService.updateUser(user);
-            
+
             return ResponseEntity.ok("Password changed successfully");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.");
@@ -222,11 +227,10 @@ public class AuthController {
     @PostMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String token, HttpServletResponse response) {
         try {
-            // Set no-cache headers to prevent caching of sensitive data
             response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
             response.setHeader("Pragma", "no-cache");
             response.setHeader("Expires", "0");
-            
+
             if (token.startsWith("Bearer ")) {
                 token = token.substring(7);
             }
@@ -255,14 +259,11 @@ public class AuthController {
             ));
         }
     }
-    
+
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
         try {
-            // Clear security context
             SecurityContextHolder.clearContext();
-            
-            // Clear JWT cookie if using cookie-based auth
             Cookie[] cookies = request.getCookies();
             if (cookies != null) {
                 for (Cookie cookie : cookies) {
@@ -276,12 +277,10 @@ public class AuthController {
                     }
                 }
             }
-            
-            // Set cache control headers to prevent caching
             response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
             response.setHeader("Pragma", "no-cache");
             response.setHeader("Expires", "0");
-            
+
             return ResponseEntity.ok().body(Map.of(
                 "success", true,
                 "message", "Logged out successfully"
