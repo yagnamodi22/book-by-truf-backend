@@ -1,9 +1,11 @@
 package com.turfbooking.turf_booking_backend.service;
 
 import com.turfbooking.turf_booking_backend.entity.Booking;
+import com.turfbooking.turf_booking_backend.entity.Payment;
 import com.turfbooking.turf_booking_backend.entity.Turf;
 import com.turfbooking.turf_booking_backend.entity.User;
 import com.turfbooking.turf_booking_backend.repository.BookingRepository;
+import com.turfbooking.turf_booking_backend.repository.PaymentRepository;
 import com.turfbooking.turf_booking_backend.repository.TurfRepository;
 import com.turfbooking.turf_booking_backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,9 @@ public class BookingService {
 
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     public Booking createBooking(Long userId, Long turfId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime, 
                             String fullName, String phoneNumber, String email, String paymentMode) {
@@ -197,6 +202,9 @@ public class BookingService {
                 Payment payment = new Payment();
                 payment.setPaymentMethod(paymentMode);
                 payment.setBooking(booking);
+                payment.setAmount(booking.getTotalAmount());
+                payment.setStatus(Payment.Status.SUCCESS);
+                payment = paymentRepository.save(payment);
                 booking.setPayment(payment);
             }
             created.add(bookingRepository.save(booking));
