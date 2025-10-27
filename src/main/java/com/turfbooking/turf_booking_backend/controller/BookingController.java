@@ -1,9 +1,11 @@
 package com.turfbooking.turf_booking_backend.controller;
 
 import com.turfbooking.turf_booking_backend.dto.BookingDTO;
+import com.turfbooking.turf_booking_backend.dto.BookingDetailsDTO;
 import com.turfbooking.turf_booking_backend.entity.Booking;
 import com.turfbooking.turf_booking_backend.dto.MultiBookingDTO;
 import com.turfbooking.turf_booking_backend.entity.User;
+import com.turfbooking.turf_booking_backend.service.BookingDetailsService;
 import com.turfbooking.turf_booking_backend.service.BookingService;
 import com.turfbooking.turf_booking_backend.service.UserService;
 import jakarta.validation.Valid;
@@ -31,6 +33,9 @@ public class BookingController {
 
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private BookingDetailsService bookingDetailsService;
 
     @PostMapping
     public ResponseEntity<?> createBooking(@Valid @RequestBody BookingDTO bookingDTO) {
@@ -114,9 +119,13 @@ public class BookingController {
 
     @GetMapping("/turf/{turfId}")
     @PreAuthorize("hasRole('OWNER') or hasRole('ADMIN')")
-    public ResponseEntity<List<Booking>> getBookingsByTurf(@PathVariable Long turfId) {
-        List<Booking> bookings = bookingService.findBookingsByTurf(turfId);
-        return ResponseEntity.ok(bookings);
+    public ResponseEntity<?> getBookingsByTurf(@PathVariable Long turfId) {
+        try {
+            List<BookingDetailsDTO> bookingDetails = bookingDetailsService.getBookingDetailsByTurf(turfId);
+            return ResponseEntity.ok(bookingDetails);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error fetching bookings: " + e.getMessage());
+        }
     }
 
     @GetMapping("/status/{status}")
