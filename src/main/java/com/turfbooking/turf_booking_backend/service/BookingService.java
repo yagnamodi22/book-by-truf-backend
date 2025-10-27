@@ -200,7 +200,7 @@ public class BookingService {
             booking.setPaymentMode(paymentMode);
             if (paymentMode != null) {
                 Payment payment = new Payment();
-                payment.setPaymentMethod(paymentMode);
+                payment.setPaymentMethod(paymentMode); // Using paymentMode value for paymentMethod field
                 payment.setBooking(booking);
                 payment.setAmount(booking.getTotalAmount());
                 payment.setStatus(Payment.Status.SUCCESS);
