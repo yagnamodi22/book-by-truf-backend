@@ -20,7 +20,7 @@ public class MultiBookingDTO {
     @NotEmpty
     private List<Slot> slots; // contiguous 1-hour slots
 
-    private String paymentMethod;
+    private String paymentMode;
     
     private String fullName;
     
@@ -49,8 +49,8 @@ public class MultiBookingDTO {
     public List<Slot> getSlots() { return slots; }
     public void setSlots(List<Slot> slots) { this.slots = slots; }
 
-    public String getPaymentMethod() { return paymentMethod; }
-    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+    public String getPaymentMode() { return paymentMode; }
+    public void setPaymentMode(String paymentMode) { this.paymentMode = paymentMode; }
     
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }

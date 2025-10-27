@@ -55,7 +55,7 @@ public class BookingController {
                     bookingDTO.getFullName(),
                     bookingDTO.getPhoneNumber(),
                     bookingDTO.getEmail(),
-                    bookingDTO.getPaymentMethod()
+                    bookingDTO.getPaymentMode()
             );
 
             return ResponseEntity.ok(booking);
@@ -229,7 +229,7 @@ public class BookingController {
                         body.getTurfId(), 
                         body.getBookingDate(), 
                         starts, 
-                        body.getPaymentMethod(),
+                        body.getPaymentMode(),
                         body.getFullName(),
                         body.getPhoneNumber(),
                         body.getEmail()

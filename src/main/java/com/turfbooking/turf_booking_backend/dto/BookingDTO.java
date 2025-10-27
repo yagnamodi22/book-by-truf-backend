@@ -27,7 +27,7 @@ public class BookingDTO {
     
     private String email;
     
-    private String paymentMethod;
+    private String paymentMode;
 
     // Constructors, getters, and setters
     public BookingDTO() {}
@@ -53,7 +53,7 @@ public class BookingDTO {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     
-    public String getPaymentMethod() { return paymentMethod; }
-    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+    public String getPaymentMode() { return paymentMode; }
+    public void setPaymentMode(String paymentMode) { this.paymentMode = paymentMode; }
 }
 
