@@ -30,7 +30,7 @@ public class BookingService {
     private UserRepository userRepository;
 
     public Booking createBooking(Long userId, Long turfId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime, 
-                            String fullName, String phoneNumber, String email, String paymentMode) {
+                            String fullName, String phoneNumber, String email, String paymentMethod) {
         // Validate user exists
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -80,10 +80,6 @@ public class BookingService {
         Booking booking = new Booking(user, turf, bookingDate, startTime, endTime);
         booking.setTotalAmount(totalAmount);
         booking.setStatus(Booking.BookingStatus.PENDING);
-        booking.setFullName(fullName);
-        booking.setPhoneNumber(phoneNumber);
-        booking.setEmail(email);
-        booking.setPaymentMode(paymentMode);
 
         return bookingRepository.save(booking);
     }
@@ -156,7 +152,7 @@ public class BookingService {
         return booked;
     }
 
-    public List<Booking> createMultipleBookings(Long userId, Long turfId, LocalDate date, List<LocalTime> slotStarts, String paymentMode, String fullName, String phoneNumber, String email) {
+    public List<Booking> createMultipleBookings(Long userId, Long turfId, LocalDate date, List<LocalTime> slotStarts, String paymentMethod, String fullName, String phoneNumber, String email) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         Turf turf = turfRepository.findById(turfId).orElseThrow(() -> new RuntimeException("Turf not found"));
         if (!turf.getIsActive()) throw new RuntimeException("Turf is not available for booking");
@@ -192,10 +188,9 @@ public class BookingService {
             booking.setFullName(fullName);
             booking.setPhoneNumber(phoneNumber);
             booking.setEmail(email);
-            booking.setPaymentMode(paymentMode);
-            if (paymentMode != null) {
+            if (dto.getPaymentMethod() != null) {
                 Payment payment = new Payment();
-                payment.setPaymentMethod(paymentMode);
+                payment.setPaymentMethod(dto.getPaymentMethod());
                 payment.setBooking(booking);
                 booking.setPayment(payment);
             }

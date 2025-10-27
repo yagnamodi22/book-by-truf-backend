@@ -59,9 +59,6 @@ public class Booking {
     
     @Column(name = "email")
     private String email;
-    
-    @Column(name = "payment_mode")
-    private String paymentMode;
 
     public enum BookingStatus {
         PENDING,
@@ -183,14 +180,6 @@ public class Booking {
     
     public void setEmail(String email) {
         this.email = email;
-    }
-    
-    public String getPaymentMode() {
-        return paymentMode;
-    }
-    
-    public void setPaymentMode(String paymentMode) {
-        this.paymentMode = paymentMode;
     }
 
     public LocalDateTime getCreatedAt() {
