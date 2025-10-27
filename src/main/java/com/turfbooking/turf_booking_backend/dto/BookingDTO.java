@@ -20,6 +20,14 @@ public class BookingDTO {
 
     @NotNull(message = "End time is required")
     private LocalTime endTime;
+    
+    private String fullName;
+    
+    private String phoneNumber;
+    
+    private String email;
+    
+    private String paymentMethod;
 
     // Constructors, getters, and setters
     public BookingDTO() {}
@@ -35,5 +43,17 @@ public class BookingDTO {
 
     public LocalTime getEndTime() { return endTime; }
     public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
+    
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
+    
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
 }
 

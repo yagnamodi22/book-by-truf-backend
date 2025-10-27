@@ -29,7 +29,8 @@ public class BookingService {
     @Autowired
     private UserRepository userRepository;
 
-    public Booking createBooking(Long userId, Long turfId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime) {
+    public Booking createBooking(Long userId, Long turfId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime, 
+                            String fullName, String phoneNumber, String email, String paymentMethod) {
         // Validate user exists
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -151,7 +152,7 @@ public class BookingService {
         return booked;
     }
 
-    public List<Booking> createMultipleBookings(Long userId, Long turfId, LocalDate date, List<LocalTime> slotStarts, String paymentMethod) {
+    public List<Booking> createMultipleBookings(Long userId, Long turfId, LocalDate date, List<LocalTime> slotStarts, String paymentMethod, String fullName, String phoneNumber, String email) {
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         Turf turf = turfRepository.findById(turfId).orElseThrow(() -> new RuntimeException("Turf not found"));
         if (!turf.getIsActive()) throw new RuntimeException("Turf is not available for booking");
@@ -184,6 +185,15 @@ public class BookingService {
             Booking booking = new Booking(user, turf, date, start, end);
             booking.setTotalAmount(turf.getPricePerHour());
             booking.setStatus(Booking.BookingStatus.CONFIRMED); // Set to CONFIRMED after payment
+            booking.setFullName(fullName);
+            booking.setPhoneNumber(phoneNumber);
+            booking.setEmail(email);
+            if (dto.getPaymentMethod() != null) {
+                Payment payment = new Payment();
+                payment.setPaymentMethod(dto.getPaymentMethod());
+                payment.setBooking(booking);
+                booking.setPayment(payment);
+            }
             created.add(bookingRepository.save(booking));
         }
         

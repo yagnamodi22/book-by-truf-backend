@@ -51,7 +51,11 @@ public class BookingController {
                     bookingDTO.getTurfId(),
                     bookingDTO.getBookingDate(),
                     bookingDTO.getStartTime(),
-                    bookingDTO.getEndTime()
+                    bookingDTO.getEndTime(),
+                    bookingDTO.getFullName(),
+                    bookingDTO.getPhoneNumber(),
+                    bookingDTO.getEmail(),
+                    bookingDTO.getPaymentMethod()
             );
 
             return ResponseEntity.ok(booking);
@@ -220,7 +224,16 @@ public class BookingController {
 
             List<LocalTime> starts = body.getSlots().stream().map(s -> s.getStartTime()).toList();
             return ResponseEntity.ok(
-                    bookingService.createMultipleBookings(user.getId(), body.getTurfId(), body.getBookingDate(), starts, body.getPaymentMethod())
+                    bookingService.createMultipleBookings(
+                        user.getId(), 
+                        body.getTurfId(), 
+                        body.getBookingDate(), 
+                        starts, 
+                        body.getPaymentMethod(),
+                        body.getFullName(),
+                        body.getPhoneNumber(),
+                        body.getEmail()
+                    )
             );
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to create bookings: " + e.getMessage());

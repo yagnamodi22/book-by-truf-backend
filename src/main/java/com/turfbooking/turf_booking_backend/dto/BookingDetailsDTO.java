@@ -33,9 +33,21 @@ public class BookingDetailsDTO {
             this.turfName = booking.getTurf().getName();
         }
         
-        if (booking.getUser() != null) {
+        // Prefer the booking's contact info fields if available, otherwise fall back to user data
+        this.userName = booking.getFullName();
+        this.userPhone = booking.getPhoneNumber();
+        this.userEmail = booking.getEmail();
+        
+        // If any fields are null, try to get them from the user entity as fallback
+        if ((this.userName == null || this.userName.isEmpty()) && booking.getUser() != null) {
             this.userName = booking.getUser().getFirstName() + " " + booking.getUser().getLastName();
+        }
+        
+        if ((this.userPhone == null || this.userPhone.isEmpty()) && booking.getUser() != null) {
             this.userPhone = booking.getUser().getPhone();
+        }
+        
+        if ((this.userEmail == null || this.userEmail.isEmpty()) && booking.getUser() != null) {
             this.userEmail = booking.getUser().getEmail();
         }
         
