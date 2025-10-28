@@ -105,12 +105,22 @@ public class TurfController {
             );
             turf.setAmenities(turfDTO.getAmenities());
             
-            // Handle images - if imageArray is provided, use it; otherwise use images string
+            // Handle images - if imageArray is provided, use it; otherwise use images string (max 5)
             if (turfDTO.getImageArray() != null && turfDTO.getImageArray().length > 0) {
                 String[] processedImages = turfService.processImages(turfDTO.getImageArray());
                 turf.setImages(String.join(",", processedImages));
+            } else if (turfDTO.getImages() != null && !turfDTO.getImages().isEmpty()) {
+                // Ensure existing images string doesn't exceed 5 images
+                String[] existingImages = turfDTO.getImages().split(",");
+                if (existingImages.length > 5) {
+                    String[] limitedImages = new String[5];
+                    System.arraycopy(existingImages, 0, limitedImages, 0, 5);
+                    turf.setImages(String.join(",", limitedImages));
+                } else {
+                    turf.setImages(turfDTO.getImages());
+                }
             } else {
-                turf.setImages(turfDTO.getImages());
+                turf.setImages("");
             }
             // Owner submissions should be inactive (pending) until admin approves
             if (!owner.getRole().equals(User.Role.ADMIN)) {
@@ -192,12 +202,22 @@ public class TurfController {
             updatedTurf.setPricePerHour(turfDTO.getPricePerHour());
             updatedTurf.setAmenities(turfDTO.getAmenities());
             
-            // Handle images - if imageArray is provided, use it; otherwise use images string
+            // Handle images - if imageArray is provided, use it; otherwise use images string (max 5)
             if (turfDTO.getImageArray() != null && turfDTO.getImageArray().length > 0) {
                 String[] processedImages = turfService.processImages(turfDTO.getImageArray());
                 updatedTurf.setImages(String.join(",", processedImages));
+            } else if (turfDTO.getImages() != null && !turfDTO.getImages().isEmpty()) {
+                // Ensure existing images string doesn't exceed 5 images
+                String[] existingImages = turfDTO.getImages().split(",");
+                if (existingImages.length > 5) {
+                    String[] limitedImages = new String[5];
+                    System.arraycopy(existingImages, 0, limitedImages, 0, 5);
+                    updatedTurf.setImages(String.join(",", limitedImages));
+                } else {
+                    updatedTurf.setImages(turfDTO.getImages());
+                }
             } else {
-                updatedTurf.setImages(turfDTO.getImages());
+                updatedTurf.setImages("");
             }
 
             Turf savedTurf = turfService.updateTurf(id, updatedTurf);

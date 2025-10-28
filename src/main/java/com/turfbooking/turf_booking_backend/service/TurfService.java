@@ -92,7 +92,7 @@ public class TurfService {
             return new String[0];
         }
         
-        // Limit to 5 images maximum
+        // Strictly limit to 5 images maximum
         int maxImages = Math.min(imageArray.length, 5);
         String[] processedImages = new String[maxImages];
         
