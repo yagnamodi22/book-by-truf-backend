@@ -16,12 +16,11 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // ✅ Allow your frontend URLs explicitly
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "http://localhost:3001",
                 "http://localhost:5173",
-                "https://frontend-bookmytruf.vercel.app" // ✅ your Vercel production URL
+                "https://frontend-bookmytruf.vercel.app" // ✅ production frontend
         ));
 
         configuration.setAllowedMethods(Arrays.asList(
@@ -35,6 +34,9 @@ public class CorsConfig {
                 "Accept",
                 "Origin"
         ));
+
+        // ✅ Added: Allow browser to access JWT header
+        configuration.setExposedHeaders(List.of("Authorization"));
 
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
