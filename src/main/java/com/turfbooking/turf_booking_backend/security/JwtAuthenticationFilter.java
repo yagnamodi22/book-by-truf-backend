@@ -17,13 +17,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * ✅ JWT Authentication Filter
+ * Validates JWT tokens from the Authorization header and sets user authentication in the context.
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtService jwtService;
 
-    // Use lazy initialization to break circular dependency
     @Autowired
     private UserDetailsService userDetailsService;
 
@@ -37,19 +40,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt;
         final String userEmail;
 
+        // ✅ Skip filtering if no Authorization header or it's not a Bearer token
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            jwt = authHeader.substring(7);
+            jwt = authHeader.substring(7).trim();
             userEmail = jwtService.extractUsername(jwt);
-            System.out.println("JWT Filter: Processing request for user: " + userEmail);
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-                System.out.println("JWT Filter: User authorities: " + userDetails.getAuthorities());
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -59,16 +61,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    System.out.println("JWT Filter: Authentication set successfully");
-                } else {
-                    System.out.println("JWT Filter: Token is not valid");
                 }
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}", e);
-            System.err.println("JWT Filter Error: " + e.getMessage());
+            logger.error("JWT Filter Error: " + e.getMessage(), e);
+
+            // ✅ In case of token error, return 401 with message
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Invalid or expired token\"}");
+            return;
         }
 
+        // Continue with next filters
         filterChain.doFilter(request, response);
     }
 }

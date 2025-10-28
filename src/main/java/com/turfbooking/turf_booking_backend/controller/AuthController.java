@@ -27,9 +27,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
-// For production, use ONLY your deployed frontend URL
 @CrossOrigin(
-    origins = {"https://frontend-bookmytruf.vercel.app"},
+    origins = {
+        "https://frontend-bookmytruf.vercel.app",
+        "https://frontend-bookmytruf-git-main-yagnamodi22s-projects.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3000"
+    },
     allowCredentials = "true"
 )
 public class AuthController {
@@ -43,6 +47,7 @@ public class AuthController {
     @Autowired
     private JwtService jwtService;
 
+    // ✅ REGISTER
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody UserRegistrationDTO registrationDTO, HttpServletResponse response) {
         try {
@@ -61,14 +66,13 @@ public class AuthController {
             User savedUser = userService.createUser(user);
             String token = jwtService.generateToken(savedUser);
 
-            // Set JWT as HttpOnly cookie
             ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("Lax")
-                .path("/")
-                .maxAge(24 * 60 * 60)
-                .build();
+                    .httpOnly(true)
+                    .secure(true)
+                    .sameSite("None") // ✅ Important for cross-domain cookies
+                    .path("/")
+                    .maxAge(24 * 60 * 60)
+                    .build();
             response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
 
             return ResponseEntity.ok(new AuthResponse(
@@ -82,31 +86,32 @@ public class AuthController {
                 savedUser.getCreatedAt()
             ));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.");
+            return ResponseEntity.badRequest().body("❌ Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Registration failed: " + e.getMessage());
+            return ResponseEntity.badRequest().body("❌ Registration failed: " + e.getMessage());
         }
     }
 
+    // ✅ LOGIN
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthRequest authRequest, HttpServletResponse response) {
         try {
             authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
             );
+
             User user = userService.findByEmail(authRequest.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found after authentication"));
 
             String token = jwtService.generateToken(user);
 
-            // Set JWT as HttpOnly cookie
             ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("Lax")
-                .path("/")
-                .maxAge(24 * 60 * 60)
-                .build();
+                    .httpOnly(true)
+                    .secure(true)
+                    .sameSite("None") // ✅ allows frontend & backend from different domains
+                    .path("/")
+                    .maxAge(24 * 60 * 60)
+                    .build();
             response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
 
             return ResponseEntity.ok(new AuthResponse(
@@ -120,10 +125,11 @@ public class AuthController {
                 user.getCreatedAt()
             ));
         } catch (AuthenticationException e) {
-            return ResponseEntity.badRequest().body("Invalid credentials");
+            return ResponseEntity.badRequest().body("❌ Invalid credentials");
         }
     }
 
+    // ✅ GET PROFILE
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile() {
         try {
@@ -144,10 +150,11 @@ public class AuthController {
                 user.getCreatedAt()
             ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to get profile: " + e.getMessage());
+            return ResponseEntity.badRequest().body("❌ Failed to get profile: " + e.getMessage());
         }
     }
 
+    // ✅ UPDATE PROFILE
     @PutMapping("/profile")
     public ResponseEntity<?> updateProfile(@Valid @RequestBody UserRegistrationDTO updateDTO) {
         try {
@@ -157,18 +164,11 @@ public class AuthController {
             User user = userService.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-            if (updateDTO.getFirstName() != null) {
-                user.setFirstName(updateDTO.getFirstName());
-            }
-            if (updateDTO.getLastName() != null) {
-                user.setLastName(updateDTO.getLastName());
-            }
-            if (updateDTO.getPhone() != null) {
-                user.setPhone(updateDTO.getPhone());
-            }
-            if (updateDTO.getPassword() != null && !updateDTO.getPassword().trim().isEmpty()) {
+            if (updateDTO.getFirstName() != null) user.setFirstName(updateDTO.getFirstName());
+            if (updateDTO.getLastName() != null) user.setLastName(updateDTO.getLastName());
+            if (updateDTO.getPhone() != null) user.setPhone(updateDTO.getPhone());
+            if (updateDTO.getPassword() != null && !updateDTO.getPassword().trim().isEmpty())
                 user.setPassword(updateDTO.getPassword());
-            }
 
             User updatedUser = userService.updateUser(user);
 
@@ -183,10 +183,11 @@ public class AuthController {
                 updatedUser.getCreatedAt()
             ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to update profile: " + e.getMessage());
+            return ResponseEntity.badRequest().body("❌ Failed to update profile: " + e.getMessage());
         }
     }
 
+    // ✅ CHANGE PASSWORD
     public static class ChangePasswordRequest {
         private String currentPassword;
         private String newPassword;
@@ -205,25 +206,22 @@ public class AuthController {
             User user = userService.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-            try {
-                authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(currentUserEmail, passwordRequest.getCurrentPassword())
-                );
-            } catch (AuthenticationException e) {
-                return ResponseEntity.badRequest().body("Current password is incorrect");
-            }
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(currentUserEmail, passwordRequest.getCurrentPassword())
+            );
 
             user.setPassword(passwordRequest.getNewPassword());
             userService.updateUser(user);
 
-            return ResponseEntity.ok("Password changed successfully");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body("Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.");
+            return ResponseEntity.ok("✅ Password changed successfully");
+        } catch (AuthenticationException e) {
+            return ResponseEntity.badRequest().body("❌ Current password is incorrect");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Failed to change password: " + e.getMessage());
+            return ResponseEntity.badRequest().body("❌ Failed to change password: " + e.getMessage());
         }
     }
 
+    // ✅ VALIDATE TOKEN
     @PostMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String token, HttpServletResponse response) {
         try {
@@ -247,10 +245,7 @@ public class AuthController {
                     )
                 ));
             } else {
-                return ResponseEntity.status(401).body(Map.of(
-                    "valid", false,
-                    "message", "Invalid token"
-                ));
+                return ResponseEntity.status(401).body(Map.of("valid", false, "message", "Invalid token"));
             }
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of(
@@ -260,10 +255,12 @@ public class AuthController {
         }
     }
 
+    // ✅ LOGOUT
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
         try {
             SecurityContextHolder.clearContext();
+
             Cookie[] cookies = request.getCookies();
             if (cookies != null) {
                 for (Cookie cookie : cookies) {
@@ -277,18 +274,19 @@ public class AuthController {
                     }
                 }
             }
+
             response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
             response.setHeader("Pragma", "no-cache");
             response.setHeader("Expires", "0");
 
-            return ResponseEntity.ok().body(Map.of(
+            return ResponseEntity.ok(Map.of(
                 "success", true,
-                "message", "Logged out successfully"
+                "message", "✅ Logged out successfully"
             ));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of(
                 "success", false,
-                "message", "Logout failed: " + e.getMessage()
+                "message", "❌ Logout failed: " + e.getMessage()
             ));
         }
     }

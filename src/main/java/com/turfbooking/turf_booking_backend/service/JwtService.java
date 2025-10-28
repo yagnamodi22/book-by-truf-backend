@@ -22,9 +22,10 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    @Value("${jwt.expiration}")
+    @Value("${jwt.expiration:86400000}") // default: 24 hours (in ms)
     private long jwtExpiration;
 
+    // ✅ Extract username (email or unique ID)
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -34,14 +35,16 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
+    // ✅ Generate token with roles
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("authorities", userDetails.getAuthorities().stream()
-                .map(authority -> authority.getAuthority())
+                .map(a -> a.getAuthority())
                 .toList());
         return generateToken(claims, userDetails);
     }
 
+    // ✅ Allow external claims
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
         return buildToken(extraClaims, userDetails, jwtExpiration);
     }
@@ -56,9 +59,14 @@ public class JwtService {
                 .compact();
     }
 
+    // ✅ Token validation
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        try {
+            final String username = extractUsername(token);
+            return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private boolean isTokenExpired(String token) {
@@ -79,12 +87,13 @@ public class JwtService {
 
     private Key getSignInKey() {
         try {
+            // ✅ Prefer Base64 decoding for env secrets
             byte[] keyBytes = Decoders.BASE64.decode(secretKey);
             return Keys.hmacShaKeyFor(keyBytes);
         } catch (IllegalArgumentException e) {
+            // ✅ Fallback to UTF-8 if secret is plain text
             byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
             return Keys.hmacShaKeyFor(keyBytes);
         }
     }
 }
-

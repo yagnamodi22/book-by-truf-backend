@@ -25,6 +25,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -60,20 +61,21 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // ✅ Centralized CORS configuration
+    // ✅ CORS configuration — include both frontend and backend origins
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
+        configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "http://localhost:3001",
                 "http://localhost:5173",
                 "https://frontend-bookmytruf.vercel.app",
-                "https://frontend-bookmytruf-git-main-yagnamodi22s-projects.vercel.app"
+                "https://frontend-bookmytruf-git-main-yagnamodi22s-projects.vercel.app",
+                "https://book-by-truf-backend.onrender.com" // ✅ backend URL allowed for preflight checks
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
-        configuration.setExposedHeaders(Arrays.asList("Authorization"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
@@ -82,14 +84,14 @@ public class SecurityConfig {
         return source;
     }
 
-    // ✅ Main Security Configuration
+    // ✅ Main security filter chain
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
-                // ✅ Public endpoints
+                // Public endpoints
                 .requestMatchers(
                     "/auth/register", "/auth/login", "/auth/logout",
                     "/api/auth/register", "/api/auth/login", "/api/auth/logout",
@@ -99,12 +101,13 @@ public class SecurityConfig {
                     "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
                 ).permitAll()
 
-                // ✅ Admin endpoints
-                .requestMatchers("/turfs/admin/**", "/api/turfs/admin/**", 
-                                "/site-settings/bulk", 
-                                "/api/site-settings/bulk").hasRole("ADMIN")
+                // Admin endpoints
+                .requestMatchers(
+                    "/turfs/admin/**", "/api/turfs/admin/**",
+                    "/site-settings/bulk", "/api/site-settings/bulk"
+                ).hasRole("ADMIN")
 
-                // ✅ All other requests must be authenticated
+                // All other endpoints
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
@@ -113,15 +116,15 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(noCacheFilter(), JwtAuthenticationFilter.class)
             .headers(headers -> headers
-                .cacheControl(cache -> cache.disable())  // Disable browser caching
-                .frameOptions(frame -> frame.deny())     // Prevent clickjacking
-                .xssProtection(xss -> xss.disable())     // Modern browsers have built-in XSS protection
+                .cacheControl(cache -> cache.disable())
+                .frameOptions(frame -> frame.deny())
+                .xssProtection(xss -> xss.disable())
                 .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))
             );
 
         return http.build();
     }
-    
+
     @Bean
     public NoCacheFilter noCacheFilter() {
         return new NoCacheFilter();
