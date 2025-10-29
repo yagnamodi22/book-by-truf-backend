@@ -71,6 +71,16 @@ public class Booking {
         CANCELLED,
         COMPLETED
     }
+    
+    // Booking type enum
+    public enum BookingType {
+        ONLINE,
+        OFFLINE
+    }
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "booking_type")
+    private BookingType bookingType = BookingType.ONLINE;
 
     @PrePersist
     protected void onCreate() {
@@ -193,6 +203,14 @@ public class Booking {
 
     public void setPaymentMode(String paymentMode) {
         this.paymentMode = paymentMode;
+    }
+    
+    public BookingType getBookingType() {
+        return bookingType;
+    }
+
+    public void setBookingType(BookingType bookingType) {
+        this.bookingType = bookingType;
     }
 
     public LocalDateTime getCreatedAt() {

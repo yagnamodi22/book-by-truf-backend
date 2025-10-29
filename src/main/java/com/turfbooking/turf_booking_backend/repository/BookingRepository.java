@@ -38,7 +38,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("SELECT b FROM Booking b WHERE b.turf.id = :turfId AND b.bookingDate = :date AND " +
             "((b.startTime < :endTime AND b.endTime > :startTime)) AND " +
-            "b.status IN ('PENDING', 'CONFIRMED')")
+            "(b.status IN ('PENDING', 'CONFIRMED') OR b.bookingType = 'OFFLINE')")
     List<Booking> findConflictingBookings(
             @Param("turfId") Long turfId,
             @Param("date") LocalDate date,

@@ -97,6 +97,67 @@ public class BookingService {
     public List<Booking> findBookingsByTurf(Long turfId) {
         return bookingRepository.findByTurfId(turfId);
     }
+    
+    public Booking createOfflineBooking(Long ownerId, Long turfId, LocalDate bookingDate, 
+                                      LocalTime startTime, LocalTime endTime, BigDecimal amount) {
+        // Validate turf exists and belongs to owner
+        Turf turf = turfRepository.findById(turfId)
+                .orElseThrow(() -> new RuntimeException("Turf not found"));
+                
+        if (!turf.getOwner().getId().equals(ownerId)) {
+            throw new RuntimeException("You can only create offline bookings for your own turfs");
+        }
+
+        // Check for booking conflicts
+        List<Booking> conflictingBookings = bookingRepository.findConflictingBookings(
+                turfId, bookingDate, startTime, endTime);
+
+        if (!conflictingBookings.isEmpty()) {
+            throw new RuntimeException("Time slot is already booked");
+        }
+
+        // Calculate total amount if not provided
+        if (amount == null) {
+            Duration duration = Duration.between(startTime, endTime);
+            long hours = duration.toHours();
+            if (duration.toMinutesPart() > 0) {
+                hours++; // Round up partial hours
+            }
+            amount = turf.getPricePerHour().multiply(BigDecimal.valueOf(hours));
+        }
+
+        // Create offline booking
+        User owner = userRepository.findById(ownerId)
+                .orElseThrow(() -> new RuntimeException("Owner not found"));
+                
+        Booking booking = new Booking(owner, turf, bookingDate, startTime, endTime);
+        booking.setTotalAmount(amount);
+        booking.setStatus(Booking.BookingStatus.CONFIRMED);
+        booking.setBookingType(Booking.BookingType.OFFLINE);
+        booking.setFullName("Offline Customer");
+        booking.setPhoneNumber("N/A");
+        booking.setEmail("N/A");
+        booking.setPaymentMode("CASH");
+
+        return bookingRepository.save(booking);
+    }
+    
+    public void deleteOfflineBooking(Long bookingId, Long ownerId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                
+        // Verify this is an offline booking
+        if (booking.getBookingType() != Booking.BookingType.OFFLINE) {
+            throw new RuntimeException("Only offline bookings can be deleted with this method");
+        }
+        
+        // Verify the turf belongs to the owner
+        if (!booking.getTurf().getOwner().getId().equals(ownerId)) {
+            throw new RuntimeException("You can only delete offline bookings for your own turfs");
+        }
+        
+        bookingRepository.delete(booking);
+    }
 
     public List<Booking> findBookingsByOwner(Long ownerId) {
         return bookingRepository.findByTurfOwnerId(ownerId);

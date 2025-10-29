@@ -27,6 +27,30 @@ import java.math.BigDecimal;
 @RequestMapping("/bookings")
 @CrossOrigin(origins = "http://localhost:3000")
 public class BookingController {
+    
+    // DTO class for offline booking requests
+    public static class OfflineBookingRequest {
+        private Long turfId;
+        private LocalDate date;
+        private LocalTime startTime;
+        private LocalTime endTime;
+        private BigDecimal amount;
+        
+        public Long getTurfId() { return turfId; }
+        public void setTurfId(Long turfId) { this.turfId = turfId; }
+        
+        public LocalDate getDate() { return date; }
+        public void setDate(LocalDate date) { this.date = date; }
+        
+        public LocalTime getStartTime() { return startTime; }
+        public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
+        
+        public LocalTime getEndTime() { return endTime; }
+        public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
+        
+        public BigDecimal getAmount() { return amount; }
+        public void setAmount(BigDecimal amount) { this.amount = amount; }
+    }
 
     @Autowired
     private BookingService bookingService;
@@ -82,6 +106,50 @@ public class BookingController {
 
         List<Booking> bookings = bookingService.findBookingsByUser(user.getId());
         return ResponseEntity.ok(bookings);
+    }
+
+    // Offline booking endpoints
+    @PostMapping("/offline")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<?> createOfflineBooking(@Valid @RequestBody OfflineBookingRequest request) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUserEmail = authentication.getName();
+
+            User owner = userService.findByEmail(currentUserEmail)
+                    .orElseThrow(() -> new RuntimeException("Owner not found"));
+
+            // Create offline booking
+            Booking booking = bookingService.createOfflineBooking(
+                    owner.getId(),
+                    request.getTurfId(),
+                    request.getDate(),
+                    request.getStartTime(),
+                    request.getEndTime(),
+                    request.getAmount()
+            );
+
+            return ResponseEntity.ok(booking);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to create offline booking: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/offline/{id}")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<?> deleteOfflineBooking(@PathVariable Long id) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUserEmail = authentication.getName();
+
+            User owner = userService.findByEmail(currentUserEmail)
+                    .orElseThrow(() -> new RuntimeException("Owner not found"));
+
+            bookingService.deleteOfflineBooking(id, owner.getId());
+            return ResponseEntity.ok().body("Offline booking successfully deleted");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to delete offline booking: " + e.getMessage());
+        }
     }
 
     @GetMapping("/my-bookings/stats")
