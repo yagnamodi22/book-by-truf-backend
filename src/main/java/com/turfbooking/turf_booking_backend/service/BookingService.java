@@ -31,11 +31,9 @@ public class BookingService {
 
     public Booking createBooking(Long userId, Long turfId, LocalDate bookingDate, LocalTime startTime, LocalTime endTime,
                                  String fullName, String phoneNumber, String email, String paymentMode) {
-        // Validate user exists
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Validate turf exists and is active
         Turf turf = turfRepository.findById(turfId)
                 .orElseThrow(() -> new RuntimeException("Turf not found"));
 
@@ -43,22 +41,19 @@ public class BookingService {
             throw new RuntimeException("Turf is not available for booking");
         }
 
-        // Reject dates in the past and past times for today
         LocalDate today = LocalDate.now();
         if (bookingDate.isBefore(today)) {
             throw new RuntimeException("Booking date cannot be in the past");
         }
 
-        // Handle late-night slots (00:00 - 03:00)
         boolean isLateNightSlot = startTime.getHour() >= 0 && startTime.getHour() < 3;
 
         if (bookingDate.equals(today) &&
                 ((!isLateNightSlot && startTime.isBefore(LocalTime.now())) ||
-                 (isLateNightSlot && startTime.isBefore(LocalTime.now()) && LocalTime.now().getHour() < 3))) {
+                        (isLateNightSlot && startTime.isBefore(LocalTime.now()) && LocalTime.now().getHour() < 3))) {
             throw new RuntimeException("You cannot book past time slots. Please select an upcoming time slot.");
         }
 
-        // Check for booking conflicts
         List<Booking> conflictingBookings = bookingRepository.findConflictingBookings(
                 turfId, bookingDate, startTime, endTime);
 
@@ -66,15 +61,13 @@ public class BookingService {
             throw new RuntimeException("Time slot is not available");
         }
 
-        // Calculate total amount
         Duration duration = Duration.between(startTime, endTime);
         long hours = duration.toHours();
         if (duration.toMinutesPart() > 0) {
-            hours++; // Round up partial hours
+            hours++;
         }
         BigDecimal totalAmount = turf.getPricePerHour().multiply(BigDecimal.valueOf(hours));
 
-        // Create booking
         Booking booking = new Booking(user, turf, bookingDate, startTime, endTime);
         booking.setTotalAmount(totalAmount);
         booking.setStatus(Booking.BookingStatus.PENDING);
@@ -97,18 +90,16 @@ public class BookingService {
     public List<Booking> findBookingsByTurf(Long turfId) {
         return bookingRepository.findByTurfId(turfId);
     }
-    
-    public Booking createOfflineBooking(Long ownerId, Long turfId, LocalDate bookingDate, 
-                                      LocalTime startTime, LocalTime endTime, BigDecimal amount) {
-        // Validate turf exists and belongs to owner
+
+    public Booking createOfflineBooking(Long ownerId, Long turfId, LocalDate bookingDate,
+                                        LocalTime startTime, LocalTime endTime, BigDecimal amount) {
         Turf turf = turfRepository.findById(turfId)
                 .orElseThrow(() -> new RuntimeException("Turf not found"));
-                
+
         if (!turf.getOwner().getId().equals(ownerId)) {
             throw new RuntimeException("You can only create offline bookings for your own turfs");
         }
 
-        // Check for booking conflicts
         List<Booking> conflictingBookings = bookingRepository.findConflictingBookings(
                 turfId, bookingDate, startTime, endTime);
 
@@ -116,20 +107,18 @@ public class BookingService {
             throw new RuntimeException("Time slot is already booked");
         }
 
-        // Calculate total amount if not provided
         if (amount == null) {
             Duration duration = Duration.between(startTime, endTime);
             long hours = duration.toHours();
             if (duration.toMinutesPart() > 0) {
-                hours++; // Round up partial hours
+                hours++;
             }
             amount = turf.getPricePerHour().multiply(BigDecimal.valueOf(hours));
         }
 
-        // Create offline booking
         User owner = userRepository.findById(ownerId)
                 .orElseThrow(() -> new RuntimeException("Owner not found"));
-                
+
         Booking booking = new Booking(owner, turf, bookingDate, startTime, endTime);
         booking.setTotalAmount(amount);
         booking.setStatus(Booking.BookingStatus.CONFIRMED);
@@ -141,21 +130,19 @@ public class BookingService {
 
         return bookingRepository.save(booking);
     }
-    
+
     public void deleteOfflineBooking(Long bookingId, Long ownerId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
-                
-        // Verify this is an offline booking
+
         if (booking.getBookingType() != Booking.BookingType.OFFLINE) {
             throw new RuntimeException("Only offline bookings can be deleted with this method");
         }
-        
-        // Verify the turf belongs to the owner
+
         if (!booking.getTurf().getOwner().getId().equals(ownerId)) {
             throw new RuntimeException("You can only delete offline bookings for your own turfs");
         }
-        
+
         bookingRepository.delete(booking);
     }
 
@@ -236,12 +223,11 @@ public class BookingService {
         for (LocalTime start : slotStarts) {
             LocalTime end = start.plusHours(1);
 
-            // Handle late-night slots (00:00 - 03:00)
             boolean isLateNightSlot = start.getHour() >= 0 && start.getHour() < 3;
 
             if (date.equals(today) &&
                     ((!isLateNightSlot && start.isBefore(LocalTime.now())) ||
-                     (isLateNightSlot && start.isBefore(LocalTime.now()) && LocalTime.now().getHour() < 3))) {
+                            (isLateNightSlot && start.isBefore(LocalTime.now()) && LocalTime.now().getHour() < 3))) {
                 throw new RuntimeException("You cannot book past time slots. Please select an upcoming time slot.");
             }
 
@@ -255,11 +241,29 @@ public class BookingService {
             booking.setFullName(fullName);
             booking.setPhoneNumber(phoneNumber);
             booking.setEmail(email);
-            booking.setPaymentMode(paymentMode); // ✅ Fixed here
+            booking.setPaymentMode(paymentMode);
 
             created.add(bookingRepository.save(booking));
         }
 
         return created;
+    }
+
+    // ======= DASHBOARD STATS METHODS =======
+
+    public long getTotalBookings() {
+        return bookingRepository.count();
+    }
+
+    public double getTotalRevenue() {
+        List<Booking> bookings = bookingRepository.findAll();
+        return bookings.stream()
+                .filter(b -> b.getTotalAmount() != null)
+                .mapToDouble(b -> b.getTotalAmount().doubleValue())
+                .sum();
+    }
+
+    public long getActiveUserCount() {
+        return userRepository.count();
     }
 }
