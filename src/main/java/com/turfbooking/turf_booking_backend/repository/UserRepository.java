@@ -11,13 +11,16 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    // Find user by email
     Optional<User> findByEmail(String email);
 
-    // Check if user exists by email
     boolean existsByEmail(String email);
 
-    // Find user by email and role (for admin or owner login)
-    @Query("SELECT u FROM User u WHERE LOWER(u.email) = LOWER(:email) AND u.role = :role")
+    @Query("SELECT u FROM User u WHERE u.email = :email AND u.role = :role")
     Optional<User> findByEmailAndRole(@Param("email") String email, @Param("role") User.Role role);
+
+    // ✅ Step 2 — Add Google OAuth support
+    @Query("SELECT u FROM User u WHERE u.googleId = :googleId")
+    Optional<User> findByGoogleId(@Param("googleId") String googleId);
+
+    boolean existsByGoogleId(String googleId);
 }

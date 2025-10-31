@@ -47,11 +47,11 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role = Role.USER;
 
-    // ✅ Added fields for Google OAuth
-    @Column(unique = true)
+    // ✅ NEW: Google OAuth fields
+    @Column(name = "google_id", unique = true)
     private String googleId;
 
-    @Column(length = 1000)
+    @Column(name = "avatar_url")
     private String avatar;
 
     @Column(name = "created_at")
@@ -83,10 +83,8 @@ public class User implements UserDetails {
         updatedAt = LocalDateTime.now();
     }
 
-    // Default constructor
     public User() {}
 
-    // Constructor
     public User(String firstName, String lastName, String email, String password, String phone) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -95,141 +93,66 @@ public class User implements UserDetails {
         this.phone = phone;
     }
 
-    // UserDetails implementation methods
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override
-    public String getPassword() {
-        return password;
-    }
+    public String getPassword() { return password; }
 
     @Override
-    public String getUsername() {
-        return email;
-    }
+    public String getUsername() { return email; }
 
     @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+    public boolean isAccountNonExpired() { return true; }
 
     @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
+    public boolean isAccountNonLocked() { return true; }
 
     @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+    public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() {
-        return true;
-    }
+    public boolean isEnabled() { return true; }
 
-    // Regular getters and setters
-    public Long getId() {
-        return id;
-    }
+    // Regular Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
 
-    public String getFirstName() {
-        return firstName;
-    }
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public String getLastName() {
-        return lastName;
-    }
+    public void setPassword(String password) { this.password = password; }
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 
-    public String getEmail() {
-        return email;
-    }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    public String getPhone() {
-        return phone;
-    }
+    public Set<Booking> getBookings() { return bookings; }
+    public void setBookings(Set<Booking> bookings) { this.bookings = bookings; }
 
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
+    public Set<Turf> getOwnedTurfs() { return ownedTurfs; }
+    public void setOwnedTurfs(Set<Turf> ownedTurfs) { this.ownedTurfs = ownedTurfs; }
 
-    public Role getRole() {
-        return role;
-    }
+    // ✅ NEW: Google OAuth Getters/Setters
+    public String getGoogleId() { return googleId; }
+    public void setGoogleId(String googleId) { this.googleId = googleId; }
 
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Set<Booking> getBookings() {
-        return bookings;
-    }
-
-    public void setBookings(Set<Booking> bookings) {
-        this.bookings = bookings;
-    }
-
-    public Set<Turf> getOwnedTurfs() {
-        return ownedTurfs;
-    }
-
-    public void setOwnedTurfs(Set<Turf> ownedTurfs) {
-        this.ownedTurfs = ownedTurfs;
-    }
-
-    // ✅ Added Google fields getters/setters
-    public String getGoogleId() {
-        return googleId;
-    }
-
-    public void setGoogleId(String googleId) {
-        this.googleId = googleId;
-    }
-
-    public String getAvatar() {
-        return avatar;
-    }
-
-    public void setAvatar(String avatar) {
-        this.avatar = avatar;
-    }
+    public String getAvatar() { return avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
 }

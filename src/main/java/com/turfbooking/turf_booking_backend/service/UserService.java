@@ -49,6 +49,32 @@ public class UserService implements UserDetailsService {
         return userRepository.findByEmail(email);
     }
 
+    // ✅ New: Find user by Google ID (for OAuth login)
+    public Optional<User> findByGoogleId(String googleId) {
+        return userRepository.findByGoogleId(googleId);
+    }
+
+    // ✅ New: Create or update Google user (OAuth)
+    public User createOrUpdateGoogleUser(String googleId, String email, String name, String avatar) {
+        Optional<User> existingUser = userRepository.findByGoogleId(googleId);
+
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            user.setFirstName(name);
+            user.setAvatar(avatar);
+            return userRepository.save(user);
+        } else {
+            User newUser = new User();
+            newUser.setGoogleId(googleId);
+            newUser.setEmail(email);
+            newUser.setFirstName(name);
+            newUser.setAvatar(avatar);
+            newUser.setRole(User.Role.USER); // Default role
+            newUser.setPassword(passwordEncoder.encode("google-auth-user")); // Dummy password
+            return userRepository.save(newUser);
+        }
+    }
+
     // Find user by ID
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);
@@ -72,6 +98,7 @@ public class UserService implements UserDetailsService {
         if (userDetails.getFirstName() != null) user.setFirstName(userDetails.getFirstName());
         if (userDetails.getLastName() != null) user.setLastName(userDetails.getLastName());
         if (userDetails.getPhone() != null) user.setPhone(userDetails.getPhone());
+        if (userDetails.getAvatar() != null) user.setAvatar(userDetails.getAvatar());
 
         if (userDetails.getPassword() != null && !userDetails.getPassword().isEmpty()) {
             PasswordValidator.validateOrThrow(userDetails.getPassword());
@@ -86,7 +113,6 @@ public class UserService implements UserDetailsService {
         if (user.getId() == null) {
             throw new RuntimeException("User ID is required for update");
         }
-
         return updateUser(user.getId(), user);
     }
 
