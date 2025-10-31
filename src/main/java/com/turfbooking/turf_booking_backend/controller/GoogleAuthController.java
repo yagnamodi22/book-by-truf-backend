@@ -32,7 +32,7 @@ public class GoogleAuthController {
     @GetMapping("/callback")
     public ResponseEntity<?> googleCallback(@RequestParam("code") String code) {
         try {
-            // ✅ Exchange code for Google user info
+            // ✅ Exchange code for Google user info (directly using access_token for simplicity)
             String googleApiUrl = "https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + code;
             RestTemplate restTemplate = new RestTemplate();
             Map<String, Object> googleUser = restTemplate.getForObject(googleApiUrl, Map.class);
@@ -41,20 +41,39 @@ public class GoogleAuthController {
                 return ResponseEntity.badRequest().body("❌ Failed to get Google user info");
             }
 
-            String email = googleUser.get("email").toString();
-            String firstName = googleUser.get("given_name").toString();
+            // ✅ Extract Google user data
+            String email = googleUser.get("email").toString().toLowerCase();
+            String firstName = googleUser.get("given_name") != null ? googleUser.get("given_name").toString() : "";
             String lastName = googleUser.get("family_name") != null ? googleUser.get("family_name").toString() : "";
+            String googleId = googleUser.get("id") != null ? googleUser.get("id").toString() : null;
+            String avatar = googleUser.get("picture") != null ? googleUser.get("picture").toString() : null;
 
-            // ✅ Create new user if not exists
+            // ✅ Find or create user in DB
             User user = userService.findByEmail(email).orElseGet(() -> {
                 User newUser = new User();
                 newUser.setEmail(email);
                 newUser.setFirstName(firstName);
                 newUser.setLastName(lastName);
-                newUser.setPassword("GOOGLE_LOGIN"); // dummy password (not used)
-                newUser.setRole(User.Role.USER);
+                newUser.setPassword("GOOGLE_LOGIN"); // placeholder password (not used for Google auth)
+                newUser.setRole(User.Role.USER); // default role
+                newUser.setGoogleId(googleId);
+                newUser.setAvatar(avatar);
                 return userService.createUser(newUser);
             });
+
+            // ✅ Update Google ID / avatar if they changed
+            boolean updated = false;
+            if (googleId != null && (user.getGoogleId() == null || !user.getGoogleId().equals(googleId))) {
+                user.setGoogleId(googleId);
+                updated = true;
+            }
+            if (avatar != null && (user.getAvatar() == null || !user.getAvatar().equals(avatar))) {
+                user.setAvatar(avatar);
+                updated = true;
+            }
+            if (updated) {
+                userService.save(user);
+            }
 
             // ✅ Generate JWT token
             String token = jwtService.generateToken(user);
@@ -64,6 +83,7 @@ public class GoogleAuthController {
             return ResponseEntity.status(302).header("Location", redirectUrl).build();
 
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("❌ Google login failed: " + e.getMessage());
         }
     }

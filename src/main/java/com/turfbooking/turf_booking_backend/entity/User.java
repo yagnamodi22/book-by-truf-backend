@@ -44,10 +44,12 @@ public class User implements UserDetails {
     @Size(max = 15)
     private String phone;
 
+    // ✅ Role field for user type
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role = Role.USER;
 
-    // ✅ NEW: Google OAuth fields
+    // ✅ Google OAuth fields
     @Column(name = "google_id", unique = true)
     private String googleId;
 
@@ -76,6 +78,9 @@ public class User implements UserDetails {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (role == null) {
+            role = Role.USER; // default fallback
+        }
     }
 
     @PreUpdate
@@ -85,12 +90,13 @@ public class User implements UserDetails {
 
     public User() {}
 
-    public User(String firstName, String lastName, String email, String password, String phone) {
+    public User(String firstName, String lastName, String email, String password, String phone, Role role) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.password = password;
         this.phone = phone;
+        this.role = role != null ? role : Role.USER;
     }
 
     @Override
@@ -116,7 +122,8 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() { return true; }
 
-    // Regular Getters and Setters
+    // ===== Getters and Setters =====
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -149,7 +156,6 @@ public class User implements UserDetails {
     public Set<Turf> getOwnedTurfs() { return ownedTurfs; }
     public void setOwnedTurfs(Set<Turf> ownedTurfs) { this.ownedTurfs = ownedTurfs; }
 
-    // ✅ NEW: Google OAuth Getters/Setters
     public String getGoogleId() { return googleId; }
     public void setGoogleId(String googleId) { this.googleId = googleId; }
 
