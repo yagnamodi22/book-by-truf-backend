@@ -7,14 +7,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 
@@ -85,9 +85,18 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         // ✅ Generate JWT token
         String token = jwtService.generateToken(user);
 
-        // ✅ Encode and redirect to frontend callback with token
-        String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
-        String redirectUrl = String.format("%s/auth/callback?token=%s", frontendUrl, encodedToken);
+        // ✅ Set JWT as HTTP-only secure cookie
+        ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("None") // Required for cross-site requests
+                .path("/")
+                .maxAge(24 * 60 * 60) // 24 hours
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+
+        // ✅ Redirect to frontend dashboard without token in URL
+        String redirectUrl = String.format("%s/oauth2/callback", frontendUrl);
         response.sendRedirect(redirectUrl);
     }
 }
