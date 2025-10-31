@@ -32,7 +32,7 @@ public class GoogleAuthController {
     @GetMapping("/callback")
     public ResponseEntity<?> googleCallback(@RequestParam("code") String code) {
         try {
-            // ✅ Exchange code for Google user info (directly using access_token for simplicity)
+            // ✅ Exchange the code for user info
             String googleApiUrl = "https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + code;
             RestTemplate restTemplate = new RestTemplate();
             Map<String, Object> googleUser = restTemplate.getForObject(googleApiUrl, Map.class);
@@ -41,27 +41,24 @@ public class GoogleAuthController {
                 return ResponseEntity.badRequest().body("❌ Failed to get Google user info");
             }
 
-            // ✅ Extract Google user data
+            // ✅ Extract user data
             String email = googleUser.get("email").toString().toLowerCase();
             String firstName = googleUser.get("given_name") != null ? googleUser.get("given_name").toString() : "";
             String lastName = googleUser.get("family_name") != null ? googleUser.get("family_name").toString() : "";
             String googleId = googleUser.get("id") != null ? googleUser.get("id").toString() : null;
             String avatar = googleUser.get("picture") != null ? googleUser.get("picture").toString() : null;
 
-            // ✅ Find or create user in DB
+            // ✅ Find or create user
             User user = userService.findByEmail(email).orElseGet(() -> {
-                User newUser = new User();
-                newUser.setEmail(email);
-                newUser.setFirstName(firstName);
-                newUser.setLastName(lastName);
-                newUser.setPassword("GOOGLE_LOGIN"); // placeholder password (not used for Google auth)
-                newUser.setRole(User.Role.USER); // default role
+                User newUser = new User(firstName, lastName, email, "GOOGLE_LOGIN", null);
+                newUser.setRole(User.Role.USER);
                 newUser.setGoogleId(googleId);
                 newUser.setAvatar(avatar);
-                return userService.createUser(newUser);
+                userService.createUser(newUser); // ✅ Correct method
+                return newUser;
             });
 
-            // ✅ Update Google ID / avatar if they changed
+            // ✅ Update Google info if changed
             boolean updated = false;
             if (googleId != null && (user.getGoogleId() == null || !user.getGoogleId().equals(googleId))) {
                 user.setGoogleId(googleId);
@@ -72,13 +69,13 @@ public class GoogleAuthController {
                 updated = true;
             }
             if (updated) {
-                userService.save(user);
+                userService.createUser(user); // ✅ Save updated info using createUser
             }
 
             // ✅ Generate JWT token
             String token = jwtService.generateToken(user);
 
-            // ✅ Redirect to frontend with token
+            // ✅ Redirect back to frontend with token
             String redirectUrl = "https://frontend-bookmytruf.vercel.app/oauth2/callback?token=" + token;
             return ResponseEntity.status(302).header("Location", redirectUrl).build();
 
