@@ -24,7 +24,7 @@ spring:
       hibernate:
         format_sql: false
 
-  # OAuth2 Configuration (Google)
+  # OAuth2 Configuration (Google Login)
   security:
     oauth2:
       client:
@@ -32,7 +32,7 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID:YOUR_GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET:YOUR_GOOGLE_CLIENT_SECRET}
-            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            redirect-uri: "{baseUrl}/api/login/oauth2/code/google"
             scope:
               - email
               - profile
