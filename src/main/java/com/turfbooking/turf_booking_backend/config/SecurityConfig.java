@@ -61,17 +61,16 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // ✅ CORS configuration — include both frontend and backend origins
+    // ✅ CORS configuration — allow frontend & backend origins
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:3000",
-                "http://localhost:3001",
                 "http://localhost:5173",
                 "https://frontend-bookmytruf.vercel.app",
                 "https://frontend-bookmytruf-git-main-yagnamodi22s-projects.vercel.app",
-                "https://book-by-truf-backend.onrender.com" // ✅ backend URL allowed for preflight checks
+                "https://book-by-truf-backend.onrender.com"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
@@ -84,7 +83,7 @@ public class SecurityConfig {
         return source;
     }
 
-    // ✅ Main security filter chain
+    // ✅ Main Security Configuration (JWT + Google OAuth2)
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -93,21 +92,19 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers(
-                    "/auth/register", "/auth/login", "/auth/logout",
-                    "/api/auth/register", "/api/auth/login", "/api/auth/logout",
-                    "/turfs/public/**", "/api/turfs/public/**",
-                    "/site-settings", "/site-settings/map", "/api/site-settings", "/api/site-settings/map",
-                    "/", "/health", "/api", "/api/health",
-                    "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
+                        "/auth/register", "/auth/login", "/auth/logout",
+                        "/api/auth/register", "/api/auth/login", "/api/auth/logout",
+                        "/turfs/public/**", "/api/turfs/public/**",
+                        "/oauth2/**", "/login/**", "/login/oauth2/**", "/error",
+                        "/", "/health", "/api", "/api/health",
+                        "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
                 ).permitAll()
-
                 // Admin endpoints
                 .requestMatchers(
-                    "/turfs/admin/**", "/api/turfs/admin/**",
-                    "/site-settings/bulk", "/api/site-settings/bulk"
+                        "/turfs/admin/**", "/api/turfs/admin/**",
+                        "/site-settings/bulk", "/api/site-settings/bulk"
                 ).hasRole("ADMIN")
-
-                // All other endpoints
+                // Everything else requires authentication
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
@@ -115,6 +112,14 @@ public class SecurityConfig {
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(noCacheFilter(), JwtAuthenticationFilter.class)
+
+            // ✅ Enable OAuth2 Login
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("https://frontend-bookmytruf.vercel.app/login")
+                .defaultSuccessUrl("https://frontend-bookmytruf.vercel.app/", true)
+                .failureUrl("https://frontend-bookmytruf.vercel.app/login?error=true")
+            )
+
             .headers(headers -> headers
                 .cacheControl(cache -> cache.disable())
                 .frameOptions(frame -> frame.deny())
