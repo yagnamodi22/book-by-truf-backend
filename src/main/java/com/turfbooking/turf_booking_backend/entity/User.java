@@ -47,6 +47,13 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role = Role.USER;
 
+    // ✅ Added fields for Google OAuth
+    @Column(unique = true)
+    private String googleId;
+
+    @Column(length = 1000)
+    private String avatar;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -208,5 +215,21 @@ public class User implements UserDetails {
     public void setOwnedTurfs(Set<Turf> ownedTurfs) {
         this.ownedTurfs = ownedTurfs;
     }
-}
 
+    // ✅ Added Google fields getters/setters
+    public String getGoogleId() {
+        return googleId;
+    }
+
+    public void setGoogleId(String googleId) {
+        this.googleId = googleId;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
+}
