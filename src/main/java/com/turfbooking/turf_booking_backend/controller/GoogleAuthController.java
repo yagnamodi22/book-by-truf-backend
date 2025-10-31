@@ -4,10 +4,13 @@ import com.turfbooking.turf_booking_backend.entity.User;
 import com.turfbooking.turf_booking_backend.service.JwtService;
 import com.turfbooking.turf_booking_backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 
 @RestController
@@ -30,7 +33,7 @@ public class GoogleAuthController {
     private JwtService jwtService;
 
     @GetMapping("/callback")
-    public ResponseEntity<?> googleCallback(@RequestParam("code") String code) {
+    public ResponseEntity<?> googleCallback(@RequestParam("code") String code, HttpServletResponse response) {
         try {
             // ✅ Exchange the code for user info
             String googleApiUrl = "https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + code;
@@ -75,8 +78,18 @@ public class GoogleAuthController {
             // ✅ Generate JWT token
             String token = jwtService.generateToken(user);
 
-            // ✅ Redirect back to frontend with token
-            String redirectUrl = "https://frontend-bookmytruf.vercel.app/oauth2/callback?token=" + token;
+            // ✅ Set JWT as HTTP-only secure cookie
+            ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
+                    .httpOnly(true)
+                    .secure(true)
+                    .sameSite("None") // Required for cross-site requests
+                    .path("/")
+                    .maxAge(24 * 60 * 60) // 24 hours
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+
+            // ✅ Redirect back to frontend dashboard
+            String redirectUrl = "https://frontend-bookmytruf.vercel.app/dashboard";
             return ResponseEntity.status(302).header("Location", redirectUrl).build();
 
         } catch (Exception e) {

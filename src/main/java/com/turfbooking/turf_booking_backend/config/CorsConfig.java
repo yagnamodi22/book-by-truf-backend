@@ -32,11 +32,12 @@ public class CorsConfig {
                 "Content-Type",
                 "X-Requested-With",
                 "Accept",
-                "Origin"
+                "Origin",
+                "Cookie"
         ));
 
-        // ✅ Added: Allow browser to access JWT header
-        configuration.setExposedHeaders(List.of("Authorization"));
+        // ✅ Added: Allow browser to access JWT header and Set-Cookie
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Set-Cookie"));
 
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
