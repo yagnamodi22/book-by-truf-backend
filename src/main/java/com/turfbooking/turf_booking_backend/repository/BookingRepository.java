@@ -35,6 +35,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Page<Booking> findByTurfOwnerIdOrderByBookingDateDescStartTimeDesc(
             @Param("ownerId") Long ownerId, 
             Pageable pageable);
+            
+    // Find bookings by turf ID and booking type
+    List<Booking> findByTurfIdAndBookingType(Long turfId, Booking.BookingType bookingType);
 
     @Query("SELECT b FROM Booking b WHERE b.turf.id = :turfId AND b.bookingDate = :date AND " +
             "((b.startTime < :endTime AND b.endTime > :startTime)) AND " +

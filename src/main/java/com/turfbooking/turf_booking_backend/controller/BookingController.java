@@ -151,6 +151,23 @@ public class BookingController {
             return ResponseEntity.badRequest().body("Failed to delete offline booking: " + e.getMessage());
         }
     }
+    
+    @GetMapping("/offline/turf/{turfId}")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<?> getOfflineBookingsByTurf(@PathVariable Long turfId) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUserEmail = authentication.getName();
+
+            User owner = userService.findByEmail(currentUserEmail)
+                    .orElseThrow(() -> new RuntimeException("Owner not found"));
+
+            List<Booking> bookings = bookingService.getOfflineBookingsByTurf(turfId, owner.getId());
+            return ResponseEntity.ok(bookings);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to fetch offline bookings: " + e.getMessage());
+        }
+    }
 
     @GetMapping("/my-bookings/stats")
     public ResponseEntity<?> getMyBookingStats() {

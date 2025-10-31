@@ -145,6 +145,17 @@ public class BookingService {
 
         bookingRepository.delete(booking);
     }
+    
+    public List<Booking> getOfflineBookingsByTurf(Long turfId, Long ownerId) {
+        Turf turf = turfRepository.findById(turfId)
+                .orElseThrow(() -> new RuntimeException("Turf not found"));
+                
+        if (!turf.getOwner().getId().equals(ownerId)) {
+            throw new RuntimeException("You can only view offline bookings for your own turfs");
+        }
+        
+        return bookingRepository.findByTurfIdAndBookingType(turfId, Booking.BookingType.OFFLINE);
+    }
 
     public List<Booking> findBookingsByOwner(Long ownerId) {
         return bookingRepository.findByTurfOwnerId(ownerId);
